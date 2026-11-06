@@ -2,6 +2,7 @@
   const MARGIN = 32;
   const NAV_SPACE = 64; // room beside the image for the prev/next buttons
   const STRIP_HEIGHT = 96; // room below the image for the thumbnail strip
+  const MIN_SIZE = 48; // smaller images are icons (status dots, badges), not screenshots
   const IMAGE_HOST = /(user-attachments|private-user-images\.githubusercontent|camo\.githubusercontent|user-images\.githubusercontent|raw\.githubusercontent)/;
   const IMAGE_EXT = /\.(png|jpe?g|gif|webp|svg|avif|bmp)(\?|#|$)/i;
   const ICONS = {
@@ -12,10 +13,20 @@
 
   let active = null;
 
+  function isIcon(img) {
+    // A not-yet-loaded image renders at 0×0, so only trust its size once loaded.
+    if (!img.complete || img.naturalWidth === 0) return false;
+    const rendered = img.getBoundingClientRect();
+    const renderedSmall = rendered.width < MIN_SIZE && rendered.height < MIN_SIZE;
+    const naturalSmall = img.naturalWidth < MIN_SIZE && img.naturalHeight < MIN_SIZE;
+    return renderedSmall || naturalSmall;
+  }
+
   function isZoomable(img) {
     if (!(img instanceof HTMLImageElement)) return false;
     if (!img.closest(".markdown-body, .comment-body")) return false;
     if (img.classList.contains("emoji") || img.classList.contains("avatar")) return false;
+    if (isIcon(img)) return false;
     const link = img.closest("a");
     if (!link) return true;
     if (link.textContent.trim() !== "") return false;
